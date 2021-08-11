@@ -1,12 +1,5 @@
 #include "TypesEscrow.ligo"
 
-function setAdmin(const admin : address; var s : storage) : return is
-block {
-    if Tezos.sender = s.admin then s.admin := admin
-    else failwith("Only the admin can run this function");
-} with (noOperations, s)
-
-
 function initialize_escrow(const params : initialize_escrow_params; var s : storage) : return is
 block {
     if Tezos.amount =/= params.price then failwith(notEnoughTez)
@@ -85,3 +78,18 @@ block {
     }    
     else skip;
 }   with(ops, s) //changer ca une opération peut etre execute
+} with (noOperations, s);
+
+function setJudge(const judge : address; var s : storage) : return is
+    block{
+        const nextId : nat = size(s.judges);
+        s.judges[(nextId)] := judge;
+    } with (noOperations, s);
+
+
+function setAdmin(const admin : address; var s : storage) : return is
+    block {
+        if Tezos.sender = s.admin then s.admin := admin
+        else failwith("Only the admin can run this function");
+    } with (noOperations, s);
+
