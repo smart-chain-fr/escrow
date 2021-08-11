@@ -22,8 +22,13 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -q
+          wget https://ligolang.org/bin/linux/ligo
+          chmod +x ./ligo
+          sudo cp ./ligo /usr/local/bin
           sudo apt install libsodium-dev libsecp256k1-dev libgmp-dev -y
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install pytezos
       - name: Run tests
-        run: python3 test_escrow.py
+        run: |
+          ligo compile-contract Escrow.ligo main > Escrow.tz
+          python3 test_escrow.py
