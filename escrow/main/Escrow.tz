@@ -1,0 +1,121 @@
+{ parameter
+    (or (pair %initialize_escrow
+           (pair (pair (option %broker address) (bytes %id))
+                 (pair (mutez %price) (string %product)))
+           (address %seller))
+        (address %setAdmin)) ;
+  storage
+    (pair (pair (pair (address %admin)
+                      (big_map %disputes
+                         int
+                         (pair (pair (address %buyer) (nat %price)) (pair (address %seller) (timestamp %time)))))
+                (pair (big_map %escrows
+                         bytes
+                         (pair (pair (pair (option %broker address) (address %buyer))
+                                     (pair (map %comment string string) (mutez %price)))
+                               (pair (pair (string %product) (address %seller))
+                                     (pair (string %state) (timestamp %time)))))
+                      (big_map %judge_reward string nat)))
+          (pair (pair (big_map %judges nat address) (option %payment_contract address))
+                (option %voting_contract address))) ;
+  code { NIL operation ;
+         SWAP ;
+         UNPAIR ;
+         IF_LEFT
+           { DUP ;
+             CAR ;
+             CDR ;
+             CAR ;
+             AMOUNT ;
+             COMPARE ;
+             NEQ ;
+             IF { PUSH string "Not enough XTZ to initialize escrow" ; FAILWITH } {} ;
+             SWAP ;
+             DUP ;
+             DUG 2 ;
+             CDR ;
+             DUP 3 ;
+             CAR ;
+             CDR ;
+             CDR ;
+             DUP 4 ;
+             CAR ;
+             CDR ;
+             CAR ;
+             NOW ;
+             PUSH string "Initialized!" ;
+             PAIR ;
+             DUP 5 ;
+             CDR ;
+             DUP 6 ;
+             CAR ;
+             CDR ;
+             CDR ;
+             PAIR ;
+             PAIR ;
+             DUP 5 ;
+             CAR ;
+             CDR ;
+             CAR ;
+             EMPTY_MAP string string ;
+             PUSH string "" ;
+             SOME ;
+             PUSH string "seller" ;
+             UPDATE ;
+             PUSH string "" ;
+             SOME ;
+             PUSH string "buyer" ;
+             UPDATE ;
+             PAIR ;
+             SENDER ;
+             DUP 7 ;
+             CAR ;
+             CAR ;
+             CAR ;
+             PAIR ;
+             PAIR ;
+             PAIR ;
+             DIG 4 ;
+             CAR ;
+             CAR ;
+             CDR ;
+             SWAP ;
+             SOME ;
+             SWAP ;
+             UPDATE ;
+             PAIR ;
+             DIG 2 ;
+             CAR ;
+             CAR ;
+             PAIR ;
+             PAIR ;
+             SWAP ;
+             PAIR }
+           { SWAP ;
+             DUP ;
+             DUG 2 ;
+             CAR ;
+             CAR ;
+             CAR ;
+             SENDER ;
+             COMPARE ;
+             EQ ;
+             IF { SWAP ;
+                  DUP ;
+                  DUG 2 ;
+                  CDR ;
+                  DUP 3 ;
+                  CAR ;
+                  CDR ;
+                  DIG 3 ;
+                  CAR ;
+                  CAR ;
+                  CDR ;
+                  DIG 3 ;
+                  PAIR ;
+                  PAIR ;
+                  PAIR }
+                { DROP ; PUSH string "Only the admin can run this function" ; FAILWITH } ;
+             SWAP ;
+             PAIR } } }
+
