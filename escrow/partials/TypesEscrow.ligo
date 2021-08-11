@@ -17,10 +17,7 @@ type dispute is record [
     time : timestamp
 ]
 
-type cancel is record [
-    buyer : address;
-    seller : address
-]
+type cancel is map (address, bool)
 
 type initialize_escrow_params is record [
     seller : address;
@@ -34,7 +31,7 @@ type disputes is big_map(int, dispute);
 type escrows is big_map(bytes, escrow);
 type judges is big_map(nat, address);
 type judge_reward is big_map(string, nat);
-type cancels is big_map(int, cancel);
+type cancels is big_map(bytes, cancel);
 
 const noOperations : list (operation) = nil;
 
@@ -48,11 +45,13 @@ type storage is record [
     admin : address;
     voting_contract : option(address);
     payment_contract : option(address);
-
+    cancels : cancels
 ]
 
 type return is list (operation) * storage;
 
 type escrowAction is
-| SetAdmin of (address)
+| Agree of (bytes)
 | Initialize_escrow of initialize_escrow_params
+| SetAdmin of (address)
+| Cancel_escrow of (bytes)

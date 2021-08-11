@@ -2,6 +2,8 @@
 
 function main (const action : escrowAction; const s : storage) : return is
     case action of
-    | SetAdmin(admin) -> setAdmin(admin, s)
+    | Agree(id) -> agree(id, s)
     | Initialize_escrow(parameters) -> initialize_escrow(parameters, s)
+    | SetAdmin(admin) -> setAdmin(admin, s)
+    | Cancel_escrow(id) -> cancel_escrow(id, s)
     end;
