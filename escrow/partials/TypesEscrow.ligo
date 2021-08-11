@@ -37,6 +37,8 @@ type judge_reward is big_map(string, nat);
 type cancels is big_map(int, cancel);
 
 const noOperations : list (operation) = nil;
+
+const noOperations : list (operation) = nil;
 const notEnoughTez : string = "Not enough XTZ to initialize escrow";
 type storage is record [
     escrows : escrows;
