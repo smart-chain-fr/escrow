@@ -35,6 +35,9 @@ type escrows is big_map(bytes, escrow);
 type judges is big_map(nat, address);
 type judge_reward is big_map(string, nat);
 type cancels is big_map(int, cancel);
+type return is list (operation) * storage;
+
+const noOperations : list (operation) = nil;
 
 const noOperations : list (operation) = nil;
 const notEnoughTez : string = "Not enough XTZ to initialize escrow";
