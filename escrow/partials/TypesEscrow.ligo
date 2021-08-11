@@ -52,3 +52,7 @@ type storage is record [
 ]
 
 type return is list (operation) * storage;
+
+type escrowAction is
+| SetAdmin of (address)
+| Initialize_escrow of initialize_escrow_params
