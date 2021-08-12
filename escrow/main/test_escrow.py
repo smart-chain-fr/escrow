@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from pytezos import ContractInterface, pytezos, MichelsonRuntimeError
 from hashlib import blake2b
+from pytezos.michelson.types import core
 
 alice = 'tz1hNVs94TTjZh6BZ1PM5HL83A7aiZXkQ8ur'
 admin = 'tz1fABJ97CJMSP2DKrQx2HAFazh6GgahQ7ZK'
@@ -174,9 +175,8 @@ class EscrowContractTest(TestCase):
       
     def test_setJudge(self):
         init_storage = deepcopy(initial_storage)
-        res = self.staking.setJudge(bob).interpret(storage=init_storage, sender=admin)
-        res2 = self.staking.setJudge(alice).interpret(storage=init_storage, sender=admin)
-        self.assertEqual(res2.storage["judges"][alice] ,res.storage["judges"][bob])
+        res = self.staking.setJudge(bob).interpret(storage=init_storage, sender=admin)      
+        self.assertIsInstance(res.storage["judges"][bob], core.unit)
         self.assertEqual([], res.operations)
         with self.raisesMichelsonError("Only the admin can run this function"):
             self.staking.setJudge(bob).interpret(storage=init_storage, source=alice)
