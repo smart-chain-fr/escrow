@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from pytezos import ContractInterface, pytezos, MichelsonRuntimeError
 from hashlib import blake2b
+from pytezos.michelson.types import core
 
 alice = 'tz1hNVs94TTjZh6BZ1PM5HL83A7aiZXkQ8ur'
 admin = 'tz1fABJ97CJMSP2DKrQx2HAFazh6GgahQ7ZK'
@@ -171,3 +172,5 @@ class EscrowContractTest(TestCase):
 
         with self.raisesMichelsonError("Access denied"):
             self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=admin)
+      
+
