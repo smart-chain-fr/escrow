@@ -80,8 +80,8 @@ block {
 }   with(ops, s) //changer ca une opération peut etre execute
 
 function setAdmin(const admin : address; var s : storage) : return is
-    block {
-        if Tezos.sender = s.admin then s.admin := admin
-        else failwith("Only the admin can run this function");
-    } with (noOperations, s);
+block {
+    if Tezos.sender = s.admin then s.admin := admin
+    else failwith("Only the admin can run this function");
+} with (noOperations, s);
 

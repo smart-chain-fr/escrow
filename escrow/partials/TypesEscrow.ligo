@@ -10,6 +10,7 @@ type escrow is record [
     state : string;
     time : timestamp
 ]
+
 type dispute is record [
     buyer : address;
     seller : address;
@@ -43,7 +44,7 @@ type cancels is big_map(int, cancel);
 
 const noOperations : list (operation) = nil;
 
-const noOperations : list (operation) = nil;
+
 const notEnoughTez : string = "Not enough XTZ to initialize escrow";
 type storage is record [
     escrows : escrows;
