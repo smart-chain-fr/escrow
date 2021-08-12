@@ -1,5 +1,6 @@
 const onlyAdmin : string = "Only admin";
 const accessDenied : string = "Access denied";
+const tooEarly : string = "Too early to release payment";
 const alreadyExists : string = "Escrow already exists";
 const doesntExist : string = "Escrow not found";
 const stateCompleted : string = "Completed";

@@ -45,8 +45,14 @@ block {
         | None -> failwith(doesntExist)
     end;
 
-    if Tezos.sender =/= esc.buyer then failwith(accessDenied)
+    if Tezos.sender = s.admin then
+        if Tezos.now - esc.time < 86400 then failwith(tooEarly)
+        else skip;
     else skip;
+
+    if ((Tezos.sender =/= esc.buyer) and (Tezos.sender =/= s.admin)) then failwith(accessDenied)
+    else skip;
+    
     
     esc.state := stateCompleted;
     s.escrows[id] := esc;
