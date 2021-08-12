@@ -7,4 +7,5 @@ function main (const action : escrowAction; const s : storage) : return is
     | SetAdmin(admin) -> setAdmin(admin, s)
     | Cancel_escrow(id) -> cancel_escrow(id, s)
     | SetJudge(judge) -> setJudge(judge, s)
+    | RemoveJudge(judge) -> removeJudge(judge, s)
     end;

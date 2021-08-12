@@ -87,6 +87,11 @@ function setJudge(const judge : address; var s : storage) : return is
         else failwith("Only the admin can run this function");
     } with (noOperations, s);
 
+function removeJudge(const judge : address; var s : storage) : return is 
+    block {
+        if Tezos.sender = s.admin then s.judges := Map.remove(judge, s.judges)
+        else failwith("Only the admin can run this function");
+    }  with (noOperations, s);
 
 function setAdmin(const admin : address; var s : storage) : return is
     block {
