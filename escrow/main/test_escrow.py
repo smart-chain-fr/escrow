@@ -171,3 +171,12 @@ class EscrowContractTest(TestCase):
 
         with self.raisesMichelsonError("Access denied"):
             self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=admin)
+      
+    def test_setJudge(self):
+        init_storage = deepcopy(initial_storage)
+        res = self.staking.setJudge(bob).interpret(storage=init_storage, sender=admin)
+        res2 = self.staking.setJudge(alice).interpret(storage=init_storage, sender=admin)
+        self.assertEqual(res2.storage["judges"][alice] ,res.storage["judges"][bob])
+        self.assertEqual([], res.operations)
+        with self.raisesMichelsonError("Only the admin can run this function"):
+            self.staking.setJudge(bob).interpret(storage=init_storage, source=alice)
