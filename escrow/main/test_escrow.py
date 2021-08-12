@@ -7,6 +7,7 @@ from hashlib import blake2b
 alice = 'tz1hNVs94TTjZh6BZ1PM5HL83A7aiZXkQ8ur'
 admin = 'tz1fABJ97CJMSP2DKrQx2HAFazh6GgahQ7ZK'
 bob = 'tz1c6PPijJnZYjKiSQND4pMtGMg6csGeAiiF'
+oscar = 'tz1Phy92c2n817D17dUGzxNgw1qCkNSTWZY2'
 initial_storage = ContractInterface.from_file("Escrow.tz").storage.dummy()
 initial_storage["admin"] = admin
 empty_comment = {
@@ -152,6 +153,12 @@ class EscrowContractTest(TestCase):
         self.assertDictEqual(res.storage["escrows"], expected_escrows)
         self.assertEqual(res.operations.pop(), operation)
 
+        ##################################################################
+        # The admin releases a payment for a user before the 24hr (fails #
+        ##################################################################
+        with self.raisesMichelsonError("Too early to release payment"):
+            self.escrow.agree(escrow_key).interpret(storage=init_storage, sender=admin, now=900)
+
         #######################################################################
         # The admin releases a payment for a user (24hr have passed it works) #
         #######################################################################
@@ -162,6 +169,13 @@ class EscrowContractTest(TestCase):
         ####################################################################
         # Random user tries to validate an escrow for someone else (fails) #
         ####################################################################
+        with self.raisesMichelsonError("Access denied"):
+            self.escrow.agree(blake2b("NFT de Charles".encode()).digest()).interpret(storage=init_storage,
+                                                                                     sender=oscar, now=500)
+
+        ###############################################################
+        # Seller tries to validate an escrow for someone else (fails) #
+        ###############################################################
         with self.raisesMichelsonError("Access denied"):
             self.escrow.agree(blake2b("NFT de Charles".encode()).digest()).interpret(storage=init_storage,
                                                                                      sender=bob, now=500)
@@ -204,14 +218,39 @@ class EscrowContractTest(TestCase):
         self.assertDictEqual(res.storage["cancels"], expected_cancels)
         self.assertEqual(res.operations, [])
 
+        expected_cancels = {
+            escrow_key: {
+                bob: True
+            }
+        }
+        #########################################################
+        # Seller tries to create a cancellation request  (works) #
+        #########################################################
+        res2 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=bob)
+        self.assertDictEqual(res2.storage["cancels"], expected_cancels)
+        self.assertEqual(res2.operations, [])
+
         init_storage["cancels"] = deepcopy(expected_cancels)
 
         ##########################################################################
+        # Seller tries to cancel 1 more time  (works but doesn't change anything) #
+        ##########################################################################
+        res3 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=bob)
+        self.assertDictEqual(res3.storage, init_storage)
+        self.assertEqual(res3.operations, [])
+
+        expected_cancels = {
+            escrow_key: {
+                alice: True
+            }
+        }
+        init_storage["cancels"] = deepcopy(expected_cancels)
+        ##########################################################################
         # Buyer tries to cancel 1 more time  (works but doesn't change anything) #
         ##########################################################################
-        res2 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=alice)
-        self.assertDictEqual(res2.storage, init_storage)
-        self.assertEqual(res2.operations, [])
+        res4 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=alice)
+        self.assertDictEqual(res4.storage, init_storage)
+        self.assertEqual(res4.operations, [])
         expected_cancels[escrow_key][bob] = True
         operation = {
             'kind': 'transaction',
@@ -229,9 +268,29 @@ class EscrowContractTest(TestCase):
         ##############################################################################
         # seller accepts the cancellation request, the XTZ is sent back to the buyer #
         ##############################################################################
-        res3 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=bob)
-        self.assertDictEqual(res3.storage["cancels"], expected_cancels)
-        self.assertEqual(res3.operations.pop(), operation)
+        res5 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=bob)
+        self.assertDictEqual(res5.storage["cancels"], expected_cancels)
+        self.assertEqual(res5.operations.pop(), operation)
+
+        expected_cancels[escrow_key][alice] = True
+        operation = {
+            'kind': 'transaction',
+            'source': 'KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi',
+            'destination': alice,
+            'amount': '1000',
+            'parameters': {
+                'entrypoint': 'default',
+                'value': {
+                    'prim': 'Unit'
+                }
+            }
+        }
+        ##############################################################################
+        # buyer accepts the cancellation request, the XTZ is sent back to the buyer #
+        ##############################################################################
+        res6 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=bob)
+        self.assertDictEqual(res6.storage["cancels"], expected_cancels)
+        self.assertEqual(res6.operations.pop(), operation)
 
         #####################################################################################
         # Buyer tries to create a cancellation request but the escrow doesn't exist (works) #
