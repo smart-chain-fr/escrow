@@ -45,7 +45,7 @@ block {
         | None -> failwith(doesntExist)
     end;
 
-    if Tezos.sender =/= esc.buyer then failwith(onlyAdmin)
+    if Tezos.sender =/= esc.buyer then failwith(accessDenied)
     else skip;
     
     esc.state := stateCompleted;
@@ -63,7 +63,7 @@ block {
         | None -> failwith(doesntExist)
     end;
 
-    if not (Tezos.sender = esc.buyer or Tezos.sender = esc.seller) then failwith("Access denied")
+    if not (Tezos.sender = esc.buyer or Tezos.sender = esc.seller) then failwith(accessDenied)
     else skip;
 
     var cancel : cancel := case s.cancels[id] of

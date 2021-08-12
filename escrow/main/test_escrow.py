@@ -13,7 +13,7 @@ empty_comment = {
     "buyer": "",
     "seller": ""
 }
-state = "Initialized!"
+state = "initialized"
 escrow_key = blake2b("NFT de Charles".encode()).digest()
 
 
@@ -40,7 +40,7 @@ class EscrowContractTest(TestCase):
         res = self.escrow.setAdmin(bob).interpret(storage=init_storage, sender=admin)
         self.assertEqual(bob, res.storage["admin"])
         self.assertEqual([], res.operations)
-        with self.raisesMichelsonError("Only the admin can run this function"):
+        with self.raisesMichelsonError("Only admin"):
             self.escrow.setAdmin(bob).interpret(storage=init_storage, source=alice)
 
     def test_initialize_escrow(self):
@@ -67,21 +67,31 @@ class EscrowContractTest(TestCase):
         }
         self.assertDictEqual(res.storage["escrows"], expected_escrows)
         self.assertEqual(res.operations, [])
-        with self.raisesMichelsonError("Not enough XTZ to initialize escrow"):
+
+        init_storage["escrows"] = expected_escrows
+        with self.raisesMichelsonError("Escrow already exists"):
+            self.escrow.initialize_escrow({
+                "seller": bob,
+                "broker": None,
+                "product": "NFT de Charles",
+                "price": 1000,
+                "id": escrow_key
+            }).interpret(storage=init_storage, sender=alice, now=420, amount=1000)
+        with self.raisesMichelsonError("The amount sent doesn't correspond to the price"):
             self.escrow.initialize_escrow({
                 "seller": bob,
                 "broker": None,
                 "product": "NFT de Charles",
                 "price": 1001,
-                "id": escrow_key
+                "id": "a".encode()
             }).interpret(storage=init_storage, sender=alice, now=420, amount=1000)
-        with self.raisesMichelsonError("Not enough XTZ to initialize escrow"):
+        with self.raisesMichelsonError("The amount sent doesn't correspond to the price"):
             self.escrow.initialize_escrow({
                 "seller": bob,
                 "broker": None,
                 "product": "NFT de Charles",
                 "price": 999,
-                "id": escrow_key
+                "id": "a".encode()
             }).interpret(storage=init_storage, sender=alice, now=420, amount=1000)
 
     def test_agree(self):
@@ -104,7 +114,7 @@ class EscrowContractTest(TestCase):
         operation = {
             'kind': 'transaction',
             'source': 'KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi',
-            'destination': 'tz1c6PPijJnZYjKiSQND4pMtGMg6csGeAiiF',
+            'destination': bob,
             'amount': '1000',
             'parameters': {
                 'entrypoint': 'default',
@@ -113,11 +123,13 @@ class EscrowContractTest(TestCase):
                 }
             }
         }
-        res = self.escrow.agree(blake2b("NFT de Charles".encode()).digest()).interpret(storage=init_storage,
-                                                                                       sender=alice, now=500)
+        res = self.escrow.agree(escrow_key).interpret(storage=init_storage, sender=alice, now=500)
         self.assertDictEqual(res.storage["escrows"], expected_escrows)
         self.assertEqual(res.operations.pop(), operation)
 
+        """res2 = self.escrow.agree(escrow_key).interpret(storage=init_storage, sender=admin, now=100000)
+        self.assertDictEqual(res2.storage["escrows"], expected_escrows)
+        self.assertEqual(res2.operations.pop(), operation)"""
         with self.raisesMichelsonError("Access denied"):
             self.escrow.agree(blake2b("NFT de Charles".encode()).digest()).interpret(storage=init_storage,
                                                                                      sender=bob, now=500)
@@ -144,16 +156,22 @@ class EscrowContractTest(TestCase):
                 alice: True
             }
         }
+        with self.raisesMichelsonError("Access denied"):
+            self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=admin)
+
         res = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=alice)
         self.assertDictEqual(res.storage["cancels"], expected_cancels)
         self.assertEqual(res.operations, [])
 
         init_storage["cancels"] = deepcopy(expected_cancels)
+        res2 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=alice)
+        self.assertDictEqual(res2.storage, init_storage)
+        self.assertEqual(res2.operations, [])
         expected_cancels[escrow_key][bob] = True
         operation = {
             'kind': 'transaction',
             'source': 'KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi',
-            'destination': 'tz1hNVs94TTjZh6BZ1PM5HL83A7aiZXkQ8ur',
+            'destination': alice,
             'amount': '1000',
             'parameters': {
                 'entrypoint': 'default',
@@ -162,12 +180,14 @@ class EscrowContractTest(TestCase):
                 }
             }
         }
-        res2 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=bob)
-        self.assertDictEqual(res2.storage["cancels"], expected_cancels)
-        self.assertEqual(res2.operations.pop(), operation)
+
+        res3 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=bob)
+        self.assertDictEqual(res3.storage["cancels"], expected_cancels)
+        self.assertEqual(res3.operations.pop(), operation)
 
         with self.raisesMichelsonError("Escrow not found"):
             self.escrow.cancel_escrow("e".encode()).interpret(storage=init_storage, sender=alice)
 
         with self.raisesMichelsonError("Access denied"):
             self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=admin)
+
