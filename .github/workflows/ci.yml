@@ -12,25 +12,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: escrow/main
     steps:
       - uses: actions/checkout@v2
-      - name: Install Python 3
-        uses: snok/install-poetry@v1.1.1
-        with:
-          python-version: '3.7.x'
-      - name: Install dependencies
+      - name: Build docker image
         run: |
-          sudo apt-get update -q
-          wget https://ligolang.org/bin/linux/ligo
-          chmod +x ./ligo
-          sudo cp ./ligo /usr/local/bin
-          sudo apt install libsodium-dev libsecp256k1-dev libgmp-dev -y
-          python -m pip install --upgrade pip
-          pip install pytezos pytest
+          docker build . -t escrow
       - name: Run tests
         run: |
-          ligo compile-contract Escrow.ligo main > Escrow.tz
-          pytest
+          docker run escrow:latest
