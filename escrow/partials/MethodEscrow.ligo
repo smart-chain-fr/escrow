@@ -81,9 +81,10 @@ block {
 } with (noOperations, s);
 
 function setJudge(const judge : address; var s : storage) : return is
-    block{
-        const nextId : nat = size(s.judges);
-        s.judges[(nextId)] := judge;
+    
+    block {
+        if Tezos.sender = s.admin then s.judges := Map.add(judge, unit, s.judges)
+        else failwith("Only the admin can run this function");
     } with (noOperations, s);
 
 

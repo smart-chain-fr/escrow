@@ -37,7 +37,7 @@ type initialize_escrow_params is record [
 
 type disputes is big_map(int, dispute);
 type escrows is big_map(bytes, escrow);
-type judges is map(nat, address);
+type judges is map(address, unit);
 type judge_reward is big_map(string, nat);
 type cancels is big_map(int, cancel);
 
