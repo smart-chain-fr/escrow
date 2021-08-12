@@ -31,4 +31,4 @@ jobs:
       - name: Run tests
         run: |
           ligo compile-contract Escrow.ligo main > Escrow.tz
-          python3 test_escrow.py
+          pytest
