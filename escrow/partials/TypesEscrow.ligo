@@ -63,5 +63,4 @@ type escrowAction is
 | Initialize_escrow of initialize_escrow_params
 | SetAdmin of (address)
 | Cancel_escrow of (bytes)
-| SetJudge of (address)
-| RemoveJudge of (address)
+
