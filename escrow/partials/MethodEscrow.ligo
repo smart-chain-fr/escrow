@@ -78,20 +78,6 @@ block {
     }    
     else skip;
 }   with(ops, s) //changer ca une opération peut etre execute
-} with (noOperations, s);
-
-function setJudge(const judge : address; var s : storage) : return is
-    
-    block {
-        if Tezos.sender = s.admin then s.judges := Map.add(judge, unit, s.judges)
-        else failwith("Only the admin can run this function");
-    } with (noOperations, s);
-
-function removeJudge(const judge : address; var s : storage) : return is 
-    block {
-        if Tezos.sender = s.admin then s.judges := Map.remove(judge, s.judges)
-        else failwith("Only the admin can run this function");
-    }  with (noOperations, s);
 
 function setAdmin(const admin : address; var s : storage) : return is
     block {
