@@ -30,8 +30,7 @@ block {
         product = params.product;
         price = params.price;
         comment = map[
-            "buyer" -> "";
-            "seller" -> ""
+            (Tezos.now, 1n) -> "Bonjour"
         ];
         state = state_initialized;
         time = (None: option (timestamp));
@@ -139,3 +138,31 @@ block {
     else skip;
 
 }   with(ops, s)
+
+ function addComment (const comment : comment_params ; var s : storage) : return is
+block{
+    var id : nat := comment.id;
+    var idEscrow : bytes := comment.idEscrow;
+    var message : string := comment.message;
+
+    var esc : escrow := case s.escrows[idEscrow] of
+        Some(_escrow) -> _escrow
+        | None -> failwith("Escrow not found")
+    end;
+
+
+    var isBroker : bool := case esc.broker of
+        Some(_broker) -> True
+        | None -> False
+    end;
+    
+    if Tezos.sender =/= esc.buyer 
+    and Tezos.sender =/= esc.seller 
+    and isBroker =/= True
+    then failwith("Access denied")
+    else skip;
+
+    const currentTime = Tezos.now;
+    const _addedComment : comments = Map.add((currentTime, id), message, esc.comment);
+    
+} with (noOperations, s);  

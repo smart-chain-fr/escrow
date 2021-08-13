@@ -1,4 +1,10 @@
-type comments is map(string, string);
+type comments is map(timestamp * nat, string);
+
+type comment_params is record[
+    id : nat; // 0 = broker; 1 = seller; 2 = buyer
+    idEscrow : bytes;
+    message : string
+]
 
 type escrow is record [
     buyer : address;
@@ -58,3 +64,4 @@ type escrowAction is
 | SetAdmin of (address)
 | Cancel_escrow of (bytes)
 | Receive_item of (proof_params)
+| AddComment of (comment_params)
