@@ -14,7 +14,7 @@ type escrow is record [
 
 type proof_params is record [
     id : bytes;
-    proof : option(string)
+    proof : string
 ]
 
 type dispute is record [

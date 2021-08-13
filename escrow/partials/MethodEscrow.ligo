@@ -82,7 +82,7 @@ block {
         Some(_escrow) -> _escrow
         | None -> failwith(doesnt_exist)
     end;
-    esc.proof := params.proof;
+    esc.proof := Some(params.proof);
     esc.time := Some(Tezos.now);
     s.escrows[params.id] := esc;
 } with (noOperations, s)
@@ -94,6 +94,9 @@ block {
         | None -> failwith(doesnt_exist)
     end;
 
+    if Tezos.sender =/= esc.buyer and Tezos.sender =/= esc.seller then failwith(access_denied)
+    else skip;
+    
     if esc.state =/= state_initialized and 
        esc.state =/= state_buyer_canceled and
        esc.state =/= state_seller_canceled
@@ -117,7 +120,7 @@ block {
         if esc.state = state_seller_canceled then failwith(already_canceled)
         else 
         block {
-            if esc.state = state_seller_canceled then esc.state := state_canceled
+            if esc.state = state_buyer_canceled then esc.state := state_canceled
             else esc.state := state_seller_canceled
         }
     }

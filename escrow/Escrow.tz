@@ -4,7 +4,7 @@
                    (pair (pair (option %broker address) (bytes %id))
                          (pair (mutez %price) (string %product)))
                    (address %seller))
-                (pair %receive_item (bytes %id) (option %proof string))))
+                (pair %receive_item (bytes %id) (string %proof))))
         (address %setAdmin)) ;
   storage
     (pair (pair (pair (address %admin)
@@ -23,6 +23,7 @@
                 (option %voting_contract address))) ;
   code { NIL operation ;
          PUSH string "Only admin" ;
+         PUSH string "Access denied" ;
          PUSH string "Escrow not found" ;
          PUSH string "Cancel already requested" ;
          PUSH string "Initialized" ;
@@ -33,12 +34,12 @@
            address
            (contract unit)
            { CONTRACT unit ; IF_NONE { PUSH string "Bad address" ; FAILWITH } {} } ;
-         DIG 9 ;
+         DIG 10 ;
          UNPAIR ;
          IF_LEFT
            { IF_LEFT
-               { DIG 9 ;
-                 DIG 10 ;
+               { DIG 10 ;
+                 DIG 11 ;
                  DROP 2 ;
                  IF_LEFT
                    { DIG 3 ;
@@ -73,7 +74,7 @@
                      COMPARE ;
                      NEQ ;
                      AND ;
-                     IF { PUSH string "Access denied" ; FAILWITH } {} ;
+                     IF { DIG 7 ; FAILWITH } { DIG 7 ; DROP } ;
                      DIG 4 ;
                      SWAP ;
                      DUP ;
@@ -206,6 +207,26 @@
                      DUG 2 ;
                      GET ;
                      IF_NONE { DIG 8 ; FAILWITH } { DIG 9 ; DROP } ;
+                     DUP ;
+                     CAR ;
+                     CDR ;
+                     CDR ;
+                     CAR ;
+                     SENDER ;
+                     COMPARE ;
+                     NEQ ;
+                     SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     CAR ;
+                     CAR ;
+                     CAR ;
+                     CDR ;
+                     SENDER ;
+                     COMPARE ;
+                     NEQ ;
+                     AND ;
+                     IF { DIG 9 ; FAILWITH } { DIG 9 ; DROP } ;
                      DUP 6 ;
                      SWAP ;
                      DUP ;
@@ -253,7 +274,7 @@
                           CDR ;
                           COMPARE ;
                           EQ ;
-                          IF { DIG 6 ; DROP ; DUP 7 ; FAILWITH }
+                          IF { DUP 8 ; FAILWITH }
                              { DUP 6 ;
                                SWAP ;
                                DUP ;
@@ -264,9 +285,7 @@
                                CDR ;
                                COMPARE ;
                                EQ ;
-                               IF { DIG 6 ;
-                                    DROP ;
-                                    DUP ;
+                               IF { DUP ;
                                     CDR ;
                                     DUP 6 ;
                                     DUP 3 ;
@@ -287,7 +306,7 @@
                                     PAIR }
                                   { DUP ;
                                     CDR ;
-                                    DIG 7 ;
+                                    DUP 8 ;
                                     DUP 3 ;
                                     CAR ;
                                     CDR ;
@@ -304,7 +323,7 @@
                                     CAR ;
                                     PAIR ;
                                     PAIR } } }
-                        { DIG 6 ; DROP } ;
+                        {} ;
                      DUP ;
                      CAR ;
                      CDR ;
@@ -323,10 +342,10 @@
                           CDR ;
                           COMPARE ;
                           EQ ;
-                          IF { DIG 5 ; DROP ; DIG 5 ; FAILWITH }
-                             { DIG 6 ;
+                          IF { DIG 5 ; DIG 6 ; DROP 2 ; DIG 5 ; FAILWITH }
+                             { DIG 7 ;
                                DROP ;
-                               DUP 6 ;
+                               DIG 6 ;
                                SWAP ;
                                DUP ;
                                DUG 2 ;
@@ -376,7 +395,7 @@
                                     CAR ;
                                     PAIR ;
                                     PAIR } } }
-                        { DIG 5 ; DIG 6 ; DROP 2 } ;
+                        { DIG 5 ; DIG 6 ; DIG 7 ; DROP 3 } ;
                      DIG 4 ;
                      SWAP ;
                      DUP ;
@@ -437,7 +456,8 @@
                  DIG 4 ;
                  DIG 5 ;
                  DIG 7 ;
-                 DROP 5 ;
+                 DIG 9 ;
+                 DROP 6 ;
                  IF_LEFT
                    { DIG 3 ;
                      DIG 4 ;
@@ -562,6 +582,7 @@
                      CDR ;
                      DUP 4 ;
                      CDR ;
+                     SOME ;
                      DUP 4 ;
                      CAR ;
                      CDR ;
@@ -606,7 +627,8 @@
              DIG 6 ;
              DIG 7 ;
              DIG 8 ;
-             DROP 7 ;
+             DIG 9 ;
+             DROP 8 ;
              SWAP ;
              DUP ;
              DUG 2 ;
