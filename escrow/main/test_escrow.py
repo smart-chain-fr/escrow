@@ -10,10 +10,7 @@ bob = 'tz1c6PPijJnZYjKiSQND4pMtGMg6csGeAiiF'
 oscar = 'tz1Phy92c2n817D17dUGzxNgw1qCkNSTWZY2'
 initial_storage = ContractInterface.from_file("Escrow.tz").storage.dummy()
 initial_storage["admin"] = admin
-empty_comment = {
-    "buyer": "",
-    "seller": ""
-}
+empty_comment = {}
 
 only_admin = "Only admin"
 access_denied = "Access denied"
@@ -257,7 +254,7 @@ class EscrowContractTest(TestCase):
         self.assertEqual(res2.operations, [])
 
         ##########################################################################
-        # Seller tries to cancel 1 more time  (works but doesn't change anything) #
+        # Seller tries to cancel 1 more time (works but doesn't change anything) #
         ##########################################################################
         init_storage["escrows"][escrow_key]["state"] = state_seller_canceled
         with self.raisesMichelsonError(already_canceled):
