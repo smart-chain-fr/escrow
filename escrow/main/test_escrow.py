@@ -56,6 +56,7 @@ class EscrowContractTest(TestCase):
 
     def test_initialize_escrow(self):
         init_storage = deepcopy(initial_storage)
+
         ##################################################################
         # User initializes an escrow with the right amount of XTZ (works)#
         ##################################################################
@@ -82,10 +83,10 @@ class EscrowContractTest(TestCase):
         self.assertDictEqual(res.storage["escrows"], expected_escrows)
         self.assertEqual(res.operations, [])
 
-        init_storage["escrows"] = expected_escrows
         #############################################
         # User tries to overwrite an escrow (fails) #
         #############################################
+        init_storage["escrows"] = expected_escrows
         with self.raisesMichelsonError("Escrow already exists"):
             self.escrow.initialize_escrow({
                 "seller": bob,
@@ -121,6 +122,10 @@ class EscrowContractTest(TestCase):
 
     def test_agree(self):
         init_storage = deepcopy(initial_storage)
+
+        ######################################################################
+        # User declares that he received the product the payment is released #
+        ######################################################################
         init_storage["escrows"] = {
             blake2b("NFT de Charles".encode()).digest():
                 {
@@ -149,9 +154,6 @@ class EscrowContractTest(TestCase):
             }
         }
 
-        ######################################################################
-        # User declares that he received the product the payment is released #
-        ######################################################################
         res = self.escrow.agree(escrow_key).interpret(storage=init_storage, sender=alice, now=500)
         self.assertDictEqual(res.storage["escrows"], expected_escrows)
         self.assertEqual(res.operations.pop(), operation)
@@ -188,8 +190,19 @@ class EscrowContractTest(TestCase):
         with self.raisesMichelsonError("Escrow not found"):
             self.escrow.agree(blake2b("N".encode()).digest()).interpret(storage=init_storage, sender=alice, now=500)
 
+        ######################################################################
+        # User tries to validate an escrow that is already validated (fails) #
+        ######################################################################
+        init_storage["escrows"][escrow_key]["state"] = state_completed
+        with self.raisesMichelsonError("Escrow already finished"):
+            self.escrow.agree(escrow_key).interpret(storage=init_storage, sender=alice, now=500)
+
     def test_cancel_escrow(self):
         init_storage = deepcopy(initial_storage)
+
+        ##################################################################
+        # Random user tries to cancel an escrow for someone else (fails) #
+        ##################################################################
         init_storage["escrows"] = {
             blake2b("NFT de Charles".encode()).digest():
                 {
@@ -203,62 +216,63 @@ class EscrowContractTest(TestCase):
                     "time": 420
                 }
         }
-        expected_cancels = {
-            escrow_key: {
-                alice: True
-            }
-        }
-        ##################################################################
-        # Random user tries to cancel an escrow for someone else (fails) #
-        ##################################################################
         with self.raisesMichelsonError("Access denied"):
             self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=admin)
 
         #########################################################
         # Buyer tries to create a cancellation request  (works) #
         #########################################################
+        expected_cancels = {
+            escrow_key: {
+                alice: True
+            }
+        }
         res = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=alice)
         self.assertDictEqual(res.storage["cancels"], expected_cancels)
         self.assertEqual(res.storage["escrows"][escrow_key]["state"], state_cancelling)
         self.assertEqual(res.operations, [])
 
+        #########################################################
+        # Seller tries to create a cancellation request  (works) #
+        #########################################################
         expected_cancels = {
             escrow_key: {
                 bob: True
             }
         }
-        #########################################################
-        # Seller tries to create a cancellation request  (works) #
-        #########################################################
         res2 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=bob)
         self.assertDictEqual(res2.storage["cancels"], expected_cancels)
         self.assertEqual(res2.storage["escrows"][escrow_key]["state"], state_cancelling)
         self.assertEqual(res2.operations, [])
 
-        init_storage["cancels"] = deepcopy(expected_cancels)
-        init_storage["escrows"][escrow_key]["state"] = state_cancelling
-        
         ##########################################################################
         # Seller tries to cancel 1 more time  (works but doesn't change anything) #
         ##########################################################################
+        init_storage["cancels"] = deepcopy(expected_cancels)
+        init_storage["escrows"][escrow_key]["state"] = state_cancelling
+
         res3 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=bob)
         self.assertDictEqual(res3.storage, init_storage)
         self.assertEqual(res3.storage["escrows"][escrow_key]["state"], state_cancelling)
         self.assertEqual(res3.operations, [])
 
+        ##########################################################################
+        # Buyer tries to cancel 1 more time  (works but doesn't change anything) #
+        ##########################################################################
         expected_cancels = {
             escrow_key: {
                 alice: True
             }
         }
         init_storage["cancels"] = deepcopy(expected_cancels)
-        ##########################################################################
-        # Buyer tries to cancel 1 more time  (works but doesn't change anything) #
-        ##########################################################################
         res4 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=alice)
         self.assertDictEqual(res4.storage, init_storage)
         self.assertEqual(res4.storage["escrows"][escrow_key]["state"], state_cancelling)
         self.assertEqual(res4.operations, [])
+
+        ##############################################################################
+        # seller accepts the cancellation request, the XTZ is sent back to the buyer #
+        ##############################################################################
         expected_cancels[escrow_key][bob] = True
         operation = {
             'kind': 'transaction',
@@ -273,14 +287,14 @@ class EscrowContractTest(TestCase):
             }
         }
 
-        ##############################################################################
-        # seller accepts the cancellation request, the XTZ is sent back to the buyer #
-        ##############################################################################
         res5 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=bob)
         self.assertDictEqual(res5.storage["cancels"], expected_cancels)
         self.assertEqual(res5.storage["escrows"][escrow_key]["state"], state_cancelled)
         self.assertEqual(res5.operations.pop(), operation)
 
+        ##############################################################################
+        # buyer accepts the cancellation request, the XTZ is sent back to the buyer #
+        ##############################################################################
         expected_cancels[escrow_key][alice] = True
         operation = {
             'kind': 'transaction',
@@ -294,9 +308,6 @@ class EscrowContractTest(TestCase):
                 }
             }
         }
-        ##############################################################################
-        # buyer accepts the cancellation request, the XTZ is sent back to the buyer #
-        ##############################################################################
         res6 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=bob)
         self.assertDictEqual(res6.storage["cancels"], expected_cancels)
         self.assertEqual(res6.storage["escrows"][escrow_key]["state"], state_cancelled)
@@ -313,4 +324,3 @@ class EscrowContractTest(TestCase):
         ###############################################################
         with self.raisesMichelsonError("Access denied"):
             self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=admin)
-
