@@ -1,5 +1,6 @@
 #include "TypesEscrow.ligo"
 #include "Error.ligo"
+#include "State.ligo"
 
 function setAdmin(const admin : address; var s : storage) : return is
 block {
@@ -44,6 +45,9 @@ block {
         Some(_escrow) -> _escrow
         | None -> failwith(doesntExist)
     end;
+    
+    if esc.state =/= stateInitialized and esc.state =/= stateCancelling then failwith(alreadyFinished)
+    else skip;
 
     if Tezos.sender = s.admin then
         if Tezos.now - esc.time < 86400 then failwith(tooEarly)
@@ -89,16 +93,19 @@ block {
         | None -> False
     end;
 
+    esc.state := stateCancelling;
     s.cancels[id] := cancel;
-
     var ops : list (operation) := list [];
 
     if buy_cancel and sell_cancel then
     block {
+        esc.state := stateCancelled;
         const receiver : contract (unit) = get_address(esc.buyer);
         remove id from map s.escrows;
         const op : operation = Tezos.transaction (unit, esc.price, receiver); 
         ops := list [op];    
     }    
     else skip;
+
+    s.escrows[id] := esc;
 }   with(ops, s)

@@ -14,7 +14,10 @@ empty_comment = {
     "buyer": "",
     "seller": ""
 }
-state = "initialized"
+state_initialized = "EX"
+state_cancelling = "AN"
+state_cancelled = "CA"
+state_completed = "VA"
 escrow_key = blake2b("NFT de Charles".encode()).digest()
 
 
@@ -72,7 +75,7 @@ class EscrowContractTest(TestCase):
                     "product": "NFT de Charles",
                     "price": 1000,
                     "comment": empty_comment,
-                    "state": state,
+                    "state": state_initialized,
                     "time": 420
                 }
         }
@@ -127,12 +130,12 @@ class EscrowContractTest(TestCase):
                     "product": "NFT de Charles",
                     "price": 1000,
                     "comment": empty_comment,
-                    "state": state,
+                    "state": state_initialized,
                     "time": 420
                 }
         }
         expected_escrows = deepcopy(init_storage)["escrows"]
-        expected_escrows[blake2b("NFT de Charles".encode()).digest()]["state"] = "Completed"
+        expected_escrows[blake2b("NFT de Charles".encode()).digest()]["state"] = state_completed
         operation = {
             'kind': 'transaction',
             'source': 'KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi',
@@ -196,7 +199,7 @@ class EscrowContractTest(TestCase):
                     "product": "NFT de Charles",
                     "price": 1000,
                     "comment": empty_comment,
-                    "state": state,
+                    "state": state_initialized,
                     "time": 420
                 }
         }
@@ -216,6 +219,7 @@ class EscrowContractTest(TestCase):
         #########################################################
         res = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=alice)
         self.assertDictEqual(res.storage["cancels"], expected_cancels)
+        self.assertEqual(res.storage["escrows"][escrow_key]["state"], state_cancelling)
         self.assertEqual(res.operations, [])
 
         expected_cancels = {
@@ -228,15 +232,18 @@ class EscrowContractTest(TestCase):
         #########################################################
         res2 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=bob)
         self.assertDictEqual(res2.storage["cancels"], expected_cancels)
+        self.assertEqual(res2.storage["escrows"][escrow_key]["state"], state_cancelling)
         self.assertEqual(res2.operations, [])
 
         init_storage["cancels"] = deepcopy(expected_cancels)
-
+        init_storage["escrows"][escrow_key]["state"] = state_cancelling
+        
         ##########################################################################
         # Seller tries to cancel 1 more time  (works but doesn't change anything) #
         ##########################################################################
         res3 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=bob)
         self.assertDictEqual(res3.storage, init_storage)
+        self.assertEqual(res3.storage["escrows"][escrow_key]["state"], state_cancelling)
         self.assertEqual(res3.operations, [])
 
         expected_cancels = {
@@ -250,6 +257,7 @@ class EscrowContractTest(TestCase):
         ##########################################################################
         res4 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=alice)
         self.assertDictEqual(res4.storage, init_storage)
+        self.assertEqual(res4.storage["escrows"][escrow_key]["state"], state_cancelling)
         self.assertEqual(res4.operations, [])
         expected_cancels[escrow_key][bob] = True
         operation = {
@@ -270,6 +278,7 @@ class EscrowContractTest(TestCase):
         ##############################################################################
         res5 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=bob)
         self.assertDictEqual(res5.storage["cancels"], expected_cancels)
+        self.assertEqual(res5.storage["escrows"][escrow_key]["state"], state_cancelled)
         self.assertEqual(res5.operations.pop(), operation)
 
         expected_cancels[escrow_key][alice] = True
@@ -290,6 +299,7 @@ class EscrowContractTest(TestCase):
         ##############################################################################
         res6 = self.escrow.cancel_escrow(escrow_key).interpret(storage=init_storage, sender=bob)
         self.assertDictEqual(res6.storage["cancels"], expected_cancels)
+        self.assertEqual(res6.storage["escrows"][escrow_key]["state"], state_cancelled)
         self.assertEqual(res6.operations.pop(), operation)
 
         #####################################################################################
