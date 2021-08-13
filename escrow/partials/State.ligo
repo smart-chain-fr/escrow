@@ -1,4 +1,5 @@
-const stateInitialized : string = "EX";
-const stateCancelling : string = "AN";
-const stateCancelled : string = "CA";
-const stateCompleted : string = "VA";
+const state_initialized : string = "IN";
+const state_buyer_cancelling : string = "BC";
+const state_cancelling : string = "SC";
+const state_cancelled : string = "CA";
+const state_completed : string = "VA";

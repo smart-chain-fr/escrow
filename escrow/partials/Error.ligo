@@ -6,3 +6,4 @@ const doesntExist : string = "Escrow not found";
 const notRightAmount : string = "The amount sent doesn't correspond to the price";
 const badAddress : string = "Bad address";
 const alreadyFinished : string = "Escrow already finished";
+const already_canceled : string = "Cancel already requested"
