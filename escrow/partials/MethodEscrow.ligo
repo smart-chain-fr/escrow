@@ -29,9 +29,7 @@ block {
         broker = params.broker;
         product = params.product;
         price = params.price;
-        comment = map[
-            (Tezos.now, 1n) -> "Bonjour"
-        ];
+         comment = (map[] : comments);
         state = state_initialized;
         time = (None: option (timestamp));
         proof = (None: option (string))
