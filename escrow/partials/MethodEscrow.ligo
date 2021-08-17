@@ -29,9 +29,7 @@ block {
         broker = params.broker;
         product = params.product;
         price = params.price;
-        comment = map[
-            (Tezos.now, 1n) -> "Bonjour"
-        ];
+         comment = (map[] : comments);
         state = state_initialized;
         time = (None: option (timestamp));
         proof = (None: option (string))
@@ -139,30 +137,41 @@ block {
 
 }   with(ops, s)
 
- function addComment (const comment : comment_params ; var s : storage) : return is
+function addComment (const comment : comment_params ; var s : storage) : return is
 block{
-    var id : nat := comment.id;
+    var id : nat := 0n;
     var idEscrow : bytes := comment.idEscrow;
     var message : string := comment.message;
 
     var esc : escrow := case s.escrows[idEscrow] of
         Some(_escrow) -> _escrow
-        | None -> failwith("Escrow not found")
+        | None -> failwith(doesnt_exist)
     end;
 
-
-    var isBroker : bool := case esc.broker of
-        Some(_broker) -> True
-        | None -> False
+    var broker : address := case esc.broker of
+        Some(_broker) -> _broker
+        | None -> ("tz1burnburnburnburnburnburnburjAYjjX" : address)
     end;
     
     if Tezos.sender =/= esc.buyer 
     and Tezos.sender =/= esc.seller 
-    and isBroker =/= True
-    then failwith("Access denied")
+    and Tezos.sender =/= broker
+    and Tezos.sender =/= s.admin
+    then failwith(access_denied)
+    else skip;
+
+    // 0 = Smartlink ; 1 = Buyer ; 2 = Seller ; 3 = Broker
+    if Tezos.sender = s.admin then id := 0n
+    else skip;
+    if Tezos.sender = esc.buyer then id := 1n
+    else skip;
+    if Tezos.sender = esc.seller then id := 2n
+    else skip;
+    if Tezos.sender = broker then id := 3n
     else skip;
 
     const currentTime = Tezos.now;
-    const _addedComment : comments = Map.add((currentTime, id), message, esc.comment);
-    
+    esc.comment := Map.add((currentTime, id), message, esc.comment);
+    s.escrows[idEscrow] := esc
+
 } with (noOperations, s);  
